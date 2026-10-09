@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>顧客・案件・見積管理</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mu:#6b7385;--bd:#e1e4ea;--ac:#2f6fed;--acx:#fff;--ok:#1e8e5a;--warn:#c47a00;--ng:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171d;--card:#1e222b;--tx:#e8eaf0;--mu:#9aa3b5;--bd:#303644;--ac:#5b8cff;--acx:#0d1220;--ok:#43c088;--warn:#e0a030;--ng:#e5695c}}
+:root[data-theme="dark"]{--bg:#14171d;--card:#1e222b;--tx:#e8eaf0;--mu:#9aa3b5;--bd:#303644;--ac:#5b8cff;--acx:#0d1220;--ok:#43c088;--warn:#e0a030;--ng:#e5695c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 12px}h3{margin:0 0 4px}h4{margin:16px 0 6px;font-size:14px;border-top:1px solid var(--bd);padding-top:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-size:19px}.stat span,.m{color:var(--mu);font-size:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.tabs{display:flex;gap:4px}
+.tab,.chip{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit}
+.chip{padding:3px 10px;border-radius:99px;font-size:12px}
+.tab.on,.chip.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 9px;width:100%}
+.bar input{flex:1;min-width:140px;width:auto}
+button.p{background:var(--ac);color:var(--acx);border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}
+button.g{background:transparent;color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}
+button.d{background:transparent;color:var(--ng);border:1px solid var(--ng);border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}
+button.sm{padding:2px 8px;font-size:12px}
+.list{display:grid;gap:8px}
+.row{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;gap:10px;cursor:pointer;align-items:center}
+.row:hover{border-color:var(--ac)}
+.r{text-align:right;white-space:nowrap}
+.badge{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;border:1px solid var(--bd);color:var(--mu);margin-left:6px}
+.s-受注,.s-取引中,.s-納品済{color:var(--ok);border-color:var(--ok)}.s-提出済,.s-見込み,.s-見積提出,.s-交渉{color:var(--warn);border-color:var(--warn)}.s-失注{color:var(--ng);border-color:var(--ng)}
+.empty{color:var(--mu);text-align:center;padding:30px 0}
+.banner{background:var(--card);border:1px solid var(--warn);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);width:min(640px,94vw);padding:16px;max-height:90vh;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.acts{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
+.acts .sp{margin-right:auto}
+.sc{overflow-x:auto}
+.it{display:grid;grid-template-columns:minmax(120px,3fr) 64px 96px 28px;gap:6px;margin-bottom:6px;min-width:340px}
+.pr{display:grid;grid-template-columns:110px minmax(110px,2fr) 54px 90px minmax(100px,2fr) 28px;gap:6px;margin-bottom:6px;min-width:560px}
+.tot{text-align:right;margin-top:8px}.tot b{font-size:17px}
+.fl{display:flex;gap:8px;align-items:center;margin-bottom:4px;word-break:break-all}
+.note{border:1px solid var(--bd);border-radius:8px;padding:6px 10px;margin-bottom:6px;white-space:pre-wrap}
+table.csv{border-collapse:collapse;font-size:12px}table.csv td{border:1px solid var(--bd);padding:2px 6px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>顧客・案件・見積管理</h1>
+  <div id="banner" class="banner" hidden>共有データベースに接続できませんでした。サインインした状態でページを開き直してください。</div>
+  <div class="stats" id="stats"></div>
+  <div class="bar">
+    <div class="tabs">
+      <button class="tab" data-t="deals">案件</button>
+      <button class="tab" data-t="quotes">見積</button>
+      <button class="tab" data-t="customers">顧客</button>
+    </div>
+    <input id="q" placeholder="検索(名前・会社・件名・型番)">
+    <button class="p" id="add">＋ 新規</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="list" id="list"></div>
+</div>
+<dialog id="dlg"></dialog>
+<dialog id="vw"></dialog>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl=u=>/^(https?:\/\/|\/_blob\/)/i.test(u||'')?u:'#';
+const yen=n=>'¥'+Math.round(n||0).toLocaleString('ja-JP');
+const CS=['見込み','取引中','休眠'], QS=['下書き','提出済','受注','失注'], DS=['引き合い','ヒアリング','見積提出','交渉','受注','納品済','失注'];
+const OPEN=['引き合い','ヒアリング','見積提出','交渉'];
+let db=null,assetsApi=null,userApi=null,myId=null,canWrite=true,customers=[],quotes=[],deals=[],notes=[],files=[],names={};
+let tab='deals',term='',stageF='',curDeal=null;
+
+const calc=qt=>{const sub=(qt.items||[]).reduce((a,i)=>a+(+i.qty||0)*(+i.price||0),0);const tax=Math.floor(sub*0.1);return{sub,tax,sum:sub+tax}};
+const cname=id=>{const c=customers.find(c=>c.id===id);return c?(c.company?c.company+' ':'')+c.name:'(顧客未設定)'};
+const day=t=>t?new Date(t).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+
+function render(){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  $('#add').hidden=!canWrite;
+  const op=deals.filter(d=>OPEN.includes(d.stage)), won=deals.filter(d=>d.stage==='受注'||d.stage==='納品済');
+  $('#stats').innerHTML=`<div class="stat"><b>${op.length}件</b><span>進行中の案件</span></div><div class="stat"><b>${yen(op.reduce((a,d)=>a+(+d.amount||0),0))}</b><span>進行中の見込金額</span></div><div class="stat"><b>${yen(won.reduce((a,d)=>a+(+d.amount||0),0))}</b><span>受注済み金額</span></div><div class="stat"><b>${customers.length}</b><span>顧客数</span></div>`;
+  $('#chips').innerHTML=tab==='deals'?`<button class="chip ${stageF?'':'on'}" data-s="">すべて ${deals.length}</button>`+DS.map(s=>`<button class="chip ${stageF===s?'on':''}" data-s="${s}">${s} ${deals.filter(d=>d.stage===s).length}</button>`).join(''):'';
+  const t=term.toLowerCase(), L=$('#list'); let h='';
+  if(tab==='deals'){
+    const rows=deals.filter(d=>(!stageF||d.stage===stageF)&&(!t||[d.title,cname(d.customerId),d.owner,JSON.stringify(d.products||[])].join(' ').toLowerCase().includes(t))).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    h=rows.map(d=>`<div class="row" data-id="${esc(d.id)}"><div><b>${esc(d.title||'(案件名なし)')}</b><span class="badge s-${esc(d.stage)}">${esc(d.stage)}</span><div class="m">${esc(cname(d.customerId))}${d.owner?' ・ 担当 '+esc(d.owner):''}${d.nextAction?' ・ 次: '+esc(d.nextAction)+(d.nextDate?'('+esc(d.nextDate)+')':''):''}</div></div><div class="r"><b>${yen(d.amount)}</b><div class="m">${(d.products||[]).length?esc(d.products[0].model||d.products[0].name||'')+((d.products.length>1)?' 他'+(d.products.length-1):''):''}</div></div></div>`).join('');
+  }else if(tab==='quotes'){
+    const rows=quotes.filter(x=>!t||[x.number,x.title,cname(x.customerId)].join(' ').toLowerCase().includes(t)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    h=rows.map(x=>`<div class="row" data-id="${esc(x.id)}"><div><b>${esc(x.title||'(件名なし)')}</b><span class="badge s-${esc(x.status)}">${esc(x.status)}</span><div class="m">${esc(x.number)} ・ ${esc(cname(x.customerId))} ・ ${esc(x.date||'')}</div></div><div class="r"><b>${yen(calc(x).sum)}</b><div class="m">税込</div></div></div>`).join('');
+  }else{
+    const rows=customers.filter(c=>!t||[c.name,c.company,c.email,c.phone,c.memo].join(' ').toLowerCase().includes(t)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    h=rows.map(c=>`<div class="row" data-id="${esc(c.id)}"><div><b>${esc(c.company||c.name)}</b>${c.company?' '+esc(c.name):''}<span class="badge s-${esc(c.status)}">${esc(c.status)}</span><div class="m">${esc([c.email,c.phone].filter(Boolean).join(' ・ '))}</div></div><div class="r m">案件 ${deals.filter(d=>d.customerId===c.id).length} ・ 見積 ${quotes.filter(x=>x.customerId===c.id).length}</div></div>`).join('');
+  }
+  L.innerHTML=h||'<div class="empty">まだデータがありません。「＋ 新規」から追加してください。</div>';
+  renderSub();
+}
+
+function openDlg(html){const d=$('#dlg');d.innerHTML=html;if(!d.open)d.showModal();return d}
+function closeDlg(){curDeal=null;$('#dlg').close()}
+const opts=(arr,v)=>arr.map(s=>`<option ${s===v?'selected':''}>${s}</option>`).join('');
+const custOpts=v=>`<option value="">選択してください</option>`+customers.map(c=>`<option value="${esc(c.id)}" ${c.id===v?'selected':''}>${esc(cname(c.id))}</option>`).join('');
+const ro=()=>canWrite?'':'disabled';
+
+function customerForm(id){
+  const c=customers.find(c=>c.id===id)||{status:'見込み'};
+  const d=openDlg(`<h3>${id?'顧客を編集':'顧客を追加'}</h3>
+  <label>氏名 *</label><input id="f_name" value="${esc(c.name)}" ${ro()}>
+  <label>会社名</label><input id="f_company" value="${esc(c.company)}" ${ro()}>
+  <div class="two"><div><label>メール</label><input id="f_email" value="${esc(c.email)}" ${ro()}></div><div><label>電話</label><input id="f_phone" value="${esc(c.phone)}" ${ro()}></div></div>
+  <label>ステータス</label><select id="f_status" ${ro()}>${opts(CS,c.status)}</select>
+  <label>メモ</label><textarea id="f_memo" rows="3" ${ro()}>${esc(c.memo)}</textarea>
+  <div class="acts">${id&&canWrite?'<button class="d sp" id="del">削除</button>':''}<button class="g" id="cx">閉じる</button>${canWrite?'<button class="p" id="sv">保存</button>':''}</div>`);
+  d.querySelector('#cx').onclick=closeDlg;
+  if(!canWrite)return;
+  d.querySelector('#sv').onclick=async()=>{
+    const name=d.querySelector('#f_name').value.trim(); if(!name){d.querySelector('#f_name').focus();return}
+    await save('customers',id,{name,company:d.querySelector('#f_company').value.trim(),email:d.querySelector('#f_email').value.trim(),phone:d.querySelector('#f_phone').value.trim(),status:d.querySelector('#f_status').value,memo:d.querySelector('#f_memo').value,createdAt:c.createdAt||Date.now(),updatedAt:Date.now()});
+  };
+  const del=d.querySelector('#del'); if(del)del.onclick=()=>confirmDel(del,'customers',id);
+}
+
+const prRow=(p={})=>`<div class="pr"><input class="p_m" placeholder="型番" value="${esc(p.model)}" ${ro()}><input class="p_n" placeholder="品名" value="${esc(p.name)}" ${ro()}><input class="p_q" type="number" min="0" step="any" value="${esc(p.qty??1)}" ${ro()}><input class="p_p" type="number" min="0" step="any" placeholder="目安単価" value="${esc(p.price??'')}" ${ro()}><input class="p_s" placeholder="仕様・内容" value="${esc(p.spec)}" ${ro()}>${canWrite?'<button class="g p_x" style="padding:0">×</button>':'<span></span>'}</div>`;
+
+function dealForm(id){
+  curDeal=id||null;
+  const x=deals.find(d=>d.id===id)||{stage:'引き合い',products:[{qty:1}]};
+  const d=openDlg(`<h3>${id?'案件を編集':'案件を追加'}</h3>
+  <label>案件名 *</label><input id="f_title" value="${esc(x.title)}" ${ro()}>
+  <div class="two"><div><label>顧客 *</label><select id="f_cust" ${ro()}>${custOpts(x.customerId)}</select></div><div><label>進捗</label><select id="f_stage" ${ro()}>${opts(DS,x.stage)}</select></div></div>
+  <div class="two"><div><label>担当営業</label><input id="f_owner" value="${esc(x.owner)}" ${ro()}></div><div><label>見込金額(税抜)</label><input id="f_amount" type="number" min="0" value="${esc(x.amount??'')}" ${ro()}></div></div>
+  <div class="two"><div><label>次のアクション</label><input id="f_next" value="${esc(x.nextAction)}" ${ro()}></div><div><label>実施日</label><input id="f_nd" type="date" value="${esc(x.nextDate)}" ${ro()}></div></div>
+  <div class="two"><div><label>受注目標・納期</label><input id="f_due" type="date" value="${esc(x.dueDate)}" ${ro()}></div><div><label>予算感</label><input id="f_budget" value="${esc(x.budget)}" ${ro()}></div></div>
+  <div class="two"><div><label>決裁者・キーパーソン</label><input id="f_decider" value="${esc(x.decider)}" ${ro()}></div><div><label>競合</label><input id="f_comp" value="${esc(x.competitor)}" ${ro()}></div></div>
+  <label>課題・ニーズ・営業メモ</label><textarea id="f_needs" rows="3" ${ro()}>${esc(x.needs)}</textarea>
+  <h4>型番・内容</h4><div class="sc" id="prs">${(x.products||[]).map(prRow).join('')}</div>
+  ${canWrite?'<button class="g sm" id="addpr">＋ 行を追加</button>':''}
+  <div class="acts">${id&&canWrite?'<button class="d sp" id="del">削除</button>':''}<button class="g" id="cx">閉じる</button>${canWrite?'<button class="p" id="sv">保存</button>':''}</div>
+  <div id="sub">${id?'':'<div class="m" style="margin-top:12px">保存後に、資料のアップロード・リンク・商談メモを追加できます。</div>'}</div>`);
+  d.querySelector('#cx').onclick=closeDlg;
+  d.querySelector('#prs').addEventListener('click',e=>{if(e.target.classList.contains('p_x'))e.target.closest('.pr').remove()});
+  if(id)renderSub();
+  if(!canWrite)return;
+  d.querySelector('#addpr').onclick=()=>d.querySelector('#prs').insertAdjacentHTML('beforeend',prRow());
+  d.querySelector('#sv').onclick=async()=>{
+    const v=k=>d.querySelector('#'+k).value, title=v('f_title').trim(), customerId=v('f_cust');
+    if(!title){d.querySelector('#f_title').focus();return} if(!customerId){d.querySelector('#f_cust').focus();return}
+    const products=[...d.querySelectorAll('.pr')].map(r=>({model:r.querySelector('.p_m').value.trim(),name:r.querySelector('.p_n').value.trim(),qty:+r.querySelector('.p_q').value||0,price:+r.querySelector('.p_p').value||0,spec:r.querySelector('.p_s').value.trim()})).filter(p=>p.model||p.name);
+    await save('deals',id,{title,customerId,stage:v('f_stage'),owner:v('f_owner').trim(),amount:+v('f_amount')||0,nextAction:v('f_next').trim(),nextDate:v('f_nd'),dueDate:v('f_due'),budget:v('f_budget').trim(),decider:v('f_decider').trim(),competitor:v('f_comp').trim(),needs:v('f_needs'),products,createdAt:x.createdAt||Date.now(),updatedAt:Date.now()});
+  };
+  const del=d.querySelector('#del'); if(del)del.onclick=()=>confirmDel(del,'deals',id);
+}
+
+function renderSub(){
+  const s=$('#sub'); if(!s||!curDeal)return;
+  const keep=$('#n_text')?.value||'';
+  const fl=files.filter(f=>f.dealId===curDeal).sort((a,b)=>b.at-a.at), nl=notes.filter(n=>n.dealId===curDeal).sort((a,b)=>b.at-a.at);
+  s.innerHTML=`<h4>資料・リンク</h4>
+  ${fl.map(f=>`<div class="fl"><a href="${esc(safeUrl(f.url))}" target="_blank" rel="noopener">${esc(f.kind==='link'?'🔗 ':'📎 ')}${esc(f.name)}</a>${/\.csv$/i.test(f.name)?`<button class="g sm" data-act="view" data-id="${esc(f.id)}">表で見る</button>`:''}${canWrite?`<button class="g sm" data-act="rmf" data-id="${esc(f.id)}">×</button>`:''}</div>`).join('')||'<div class="m">まだありません</div>'}
+  ${canWrite?`<div class="two" style="margin-top:8px"><input id="l_name" placeholder="リンクの名前"><input id="l_url" placeholder="https://..."></div><div class="acts" style="margin-top:6px"><button class="g sm" data-act="addlink">リンクを追加</button></div>`:''}
+  ${assetsApi?`<label>ファイルをアップロード(PDF・Excel・CSV・画像)</label><input type="file" id="u_file" multiple accept=".pdf,.csv,.xlsx,.xls,image/*"><div class="m">Excelはシートごとに表(CSV)へ変換して保存されます。</div>`:''}
+  <h4>商談メモ・共有情報</h4>
+  ${canWrite?`<textarea id="n_text" rows="3" placeholder="訪問内容、先方の反応、共有したい営業情報など">${esc(keep)}</textarea><div class="acts" style="margin-top:6px"><button class="p" data-act="addnote">メモを追加</button></div>`:''}
+  ${nl.map(n=>`<div class="note"><div class="m">${esc(day(n.at))} ・ ${esc(names[n.by]||'メンバー')}${canWrite&&n.by===myId?` <button class="g sm" data-act="rmn" data-id="${esc(n.id)}">削除</button>`:''}</div>${esc(n.text)}</div>`).join('')}`;
+}
+
+async function putFile(blob,name){
+  const r=await assetsApi.upload(blob);
+  await db.collection('files').add({dealId:curDeal,kind:'file',name,assetId:r.id,url:'/_blob/'+r.id,ctype:r.contentType,at:Date.now()});
+}
+document.addEventListener('change',async e=>{
+  if(e.target.id!=='u_file'||!curDeal||!assetsApi)return;
+  const inp=e.target;
+  for(const f of inp.files){
+    try{
+      if(/\.xlsx?$/i.test(f.name)){
+        if(!window.XLSX){alert('Excel変換ライブラリを読み込めませんでした。CSVかPDFにして保存してください。');continue}
+        const wb=XLSX.read(await f.arrayBuffer());
+        for(const sn of wb.SheetNames){
+          const csv=XLSX.utils.sheet_to_csv(wb.Sheets[sn]);
+          await putFile(new Blob(['\ufeff'+csv],{type:'text/csv'}),f.name.replace(/\.xlsx?$/i,'')+(wb.SheetNames.length>1?' ['+sn+']':'')+'.csv');
+        }
+      }else await putFile(f,f.name);
+    }catch(err){alert(f.name+' をアップロードできませんでした: '+(err&&err.message||err))}
+  }
+  inp.value='';
+});
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]'); if(!b||!db)return;
+  const a=b.dataset.act,id=b.dataset.id;
+  try{
+    if(a==='addlink'){const n=$('#l_name').value.trim(),u=$('#l_url').value.trim();if(!/^https?:\/\//i.test(u)){$('#l_url').focus();return}
+      await db.collection('files').add({dealId:curDeal,kind:'link',name:n||u,url:u,at:Date.now()})}
+    else if(a==='rmf')await db.collection('files').doc(id).delete();
+    else if(a==='addnote'){const t=$('#n_text').value.trim();if(!t)return;await db.collection('notes').add({dealId:curDeal,text:t,by:myId,at:Date.now()});$('#n_text').value=''}
+    else if(a==='rmn')await db.collection('notes').doc(id).delete();
+    else if(a==='view')viewCsv(files.find(f=>f.id===id));
+  }catch(err){alert('操作できませんでした: '+(err&&err.message||err))}
+});
+
+function parseCsv(t){const rows=[];let r=[],c='',q=false;t=t.replace(/^\ufeff/,'');for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch=='"'){if(t[i+1]=='"'){c+='"';i++}else q=false}else c+=ch}else if(ch=='"')q=true;else if(ch==','){r.push(c);c=''}else if(ch=='\n'){r.push(c);rows.push(r);r=[];c=''}else if(ch!='\r')c+=ch}r.push(c);rows.push(r);return rows}
+async function viewCsv(f){
+  if(!f)return; const v=$('#vw');
+  v.innerHTML=`<h3>${esc(f.name)}</h3><div class="sc" id="vb">読み込み中…</div><div class="acts"><button class="g" id="vx">閉じる</button></div>`;
+  v.querySelector('#vx').onclick=()=>v.close(); v.showModal();
+  try{
+    const res=await fetch(f.url); if(!res.ok)throw 0;
+    const rows=parseCsv(await res.text()).slice(0,500);
+    v.querySelector('#vb').innerHTML='<table class="csv">'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table>';
+  }catch(e){v.querySelector('#vb').innerHTML=`表示できませんでした。<a href="${esc(safeUrl(f.url))}" target="_blank" rel="noopener">ファイルを開く</a>`}
+}
+
+function quoteForm(id){
+  const today=new Date().toISOString().slice(0,10);
+  const x=quotes.find(x=>x.id===id)||{status:'下書き',date:today,items:[{qty:1}],customerId:''};
+  const itemRow=(i={})=>`<div class="it"><input class="i_n" placeholder="品名・内容" value="${esc(i.name)}" ${ro()}><input class="i_q" type="number" min="0" step="any" value="${esc(i.qty??1)}" ${ro()}><input class="i_p" type="number" min="0" step="any" placeholder="単価" value="${esc(i.price??'')}" ${ro()}>${canWrite?'<button class="g i_x" style="padding:0">×</button>':'<span></span>'}</div>`;
+  const d=openDlg(`<h3>${id?'見積を編集':'見積を作成'}</h3>
+  <div class="two"><div><label>顧客 *</label><select id="f_cust" ${ro()}>${custOpts(x.customerId)}</select></div>
+  <div><label>ステータス</label><select id="f_status" ${ro()}>${opts(QS,x.status)}</select></div></div>
+  <label>関連する案件</label><select id="f_deal" ${ro()}><option value="">なし</option>${deals.map(dl=>`<option value="${esc(dl.id)}" ${dl.id===x.dealId?'selected':''}>${esc(dl.title)}</option>`).join('')}</select>
+  <label>件名 *</label><input id="f_title" value="${esc(x.title)}" ${ro()}>
+  <div class="two"><div><label>見積日</label><input id="f_date" type="date" value="${esc(x.date)}" ${ro()}></div><div><label>有効期限</label><input id="f_valid" type="date" value="${esc(x.validUntil)}" ${ro()}></div></div>
+  <label>明細</label><div class="sc" id="items">${(x.items||[]).map(itemRow).join('')}</div>
+  ${canWrite?'<button class="g sm" id="addrow">＋ 行を追加</button> <button class="g sm" id="imp">案件の型番を取り込む</button>':''}
+  <div class="tot" id="tot"></div>
+  <label>備考</label><textarea id="f_note" rows="2" ${ro()}>${esc(x.note)}</textarea>
+  <div class="acts">${id&&canWrite?'<button class="d sp" id="del">削除</button>':''}<button class="g" id="cx">閉じる</button>${canWrite?'<button class="p" id="sv">保存</button>':''}</div>`);
+  const read=()=>[...d.querySelectorAll('.it')].map(r=>({name:r.querySelector('.i_n').value.trim(),qty:+r.querySelector('.i_q').value||0,price:+r.querySelector('.i_p').value||0})).filter(i=>i.name||i.price);
+  const upd=()=>{const t=calc({items:read()});d.querySelector('#tot').innerHTML=`小計 ${yen(t.sub)} ／ 消費税10% ${yen(t.tax)}<br>合計 <b>${yen(t.sum)}</b>`};
+  upd();
+  d.querySelector('#cx').onclick=closeDlg;
+  d.querySelector('#items').addEventListener('input',upd);
+  d.querySelector('#items').addEventListener('click',e=>{if(e.target.classList.contains('i_x')){e.target.closest('.it').remove();upd()}});
+  if(!canWrite)return;
+  d.querySelector('#addrow').onclick=()=>d.querySelector('#items').insertAdjacentHTML('beforeend',itemRow());
+  d.querySelector('#imp').onclick=()=>{
+    const dl=deals.find(z=>z.id===d.querySelector('#f_deal').value); if(!dl){alert('先に「関連する案件」を選んでください');return}
+    if(!d.querySelector('#f_cust').value)d.querySelector('#f_cust').value=dl.customerId||'';
+    const box=d.querySelector('#items'); [...box.querySelectorAll('.it')].filter(r=>!r.querySelector('.i_n').value&&!r.querySelector('.i_p').value).forEach(r=>r.remove());
+    (dl.products||[]).forEach(p=>box.insertAdjacentHTML('beforeend',itemRow({name:[p.model,p.name].filter(Boolean).join(' '),qty:p.qty,price:p.price})));
+    upd();
+  };
+  d.querySelector('#sv').onclick=async()=>{
+    const customerId=d.querySelector('#f_cust').value, title=d.querySelector('#f_title').value.trim();
+    if(!customerId){d.querySelector('#f_cust').focus();return} if(!title){d.querySelector('#f_title').focus();return}
+    const dt=d.querySelector('#f_date').value||today;
+    const number=x.number||('Q-'+dt.replace(/-/g,'')+'-'+String(Math.floor(Math.random()*900)+100));
+    await save('quotes',id,{number,customerId,dealId:d.querySelector('#f_deal').value,title,status:d.querySelector('#f_status').value,date:dt,validUntil:d.querySelector('#f_valid').value,items:read(),note:d.querySelector('#f_note').value,createdAt:x.createdAt||Date.now(),updatedAt:Date.now()});
+  };
+  const del=d.querySelector('#del'); if(del)del.onclick=()=>confirmDel(del,'quotes',id);
+}
+
+async function save(col,id,data){
+  try{await db.collection(col).doc(id||undefined).set(data);closeDlg()}
+  catch(e){alert('保存できませんでした: '+(e&&e.message||e))}
+}
+function confirmDel(btn,col,id){
+  if(btn.dataset.sure!=='1'){btn.dataset.sure='1';btn.textContent='本当に削除する';return}
+  db.collection(col).doc(id).delete().then(closeDlg).catch(e=>alert('削除できませんでした: '+(e&&e.message||e)));
+}
+
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+$('#chips').onclick=e=>{const c=e.target.closest('.chip');if(c){stageF=c.dataset.s;render()}};
+$('#q').oninput=e=>{term=e.target.value;render()};
+$('#add').onclick=()=>tab==='deals'?dealForm():tab==='quotes'?quoteForm():customerForm();
+$('#list').onclick=e=>{const r=e.target.closest('.row');if(!r)return;(tab==='deals'?dealForm:tab==='quotes'?quoteForm:customerForm)(r.dataset.id)};
+render();
+
+async function resolveNames(){
+  if(!userApi||!userApi.profiles)return;
+  const ids=[...new Set(notes.map(n=>n.by).filter(Boolean))].filter(i=>!(i in names)); if(!ids.length)return;
+  try{const ps=await userApi.profiles(ids);ids.forEach(i=>names[i]=(ps[i]&&ps[i].name)||'');renderSub()}catch(e){}
+}
+(async()=>{
+  try{db=await window.claude?.use('db')}catch(e){db=null}
+  if(!db){$('#banner').hidden=false;return}
+  try{assetsApi=await window.claude.use('assets')}catch(e){assetsApi=null}
+  try{userApi=await window.claude.use('user');if(userApi){const w=await userApi.can('data.write');if(w===false)canWrite=false;myId=await userApi.id()}}catch(e){}
+  const onErr=e=>{$('#banner').hidden=false;$('#banner').textContent='データの読み込みに失敗しました: '+(e&&e.message||'')};
+  const sub=(col,fn)=>db.collection(col).onSnapshot(s=>{fn(s.docs.map(d=>({id:d.id,...d.data()})));render()},onErr);
+  sub('customers',a=>customers=a); sub('quotes',a=>quotes=a); sub('deals',a=>deals=a); sub('files',a=>files=a);
+  sub('notes',a=>{notes=a;resolveNames()});
+})();
+</script>
+</body>
+</html>
